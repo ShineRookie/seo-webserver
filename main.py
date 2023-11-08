@@ -1,29 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import re
 import urllib.parse
 
-
-def parse_images(file, search_text):
-    result = []
-    tag_pattern = r'([a-zA-Z][^\t\n\r\f />\x00]*)'
-    alt_pattern = r'alt="(.*)"'
-    img_pattern = r'([-\w]+\.(?:jpg|gif|png|webp))'
-
-    with open(file, 'r') as HTML_file:
-        for raw in HTML_file:
-            tag = re.findall(tag_pattern, raw, re.IGNORECASE)
-            if len(tag) > 0:
-                if tag[0] == 'img':
-                    alt_attribute = re.findall(alt_pattern, raw, re.IGNORECASE)
-                    if alt_attribute[0] != '':
-                        alt_text = alt_attribute[0]
-                        if search_text == alt_text:
-                            result.append(raw)
-                    else:
-                        src_file = re.findall(img_pattern, raw, re.IGNORECASE)
-                        if search_text == src_file[0].split('.')[0]:
-                            result.append(raw)
-    return ''.join(result)
+import pymorphy2 
 
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
@@ -52,8 +30,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
 
     def do_POST(self):
+        search_params = self.path.split('?')[1].split('&')
+
         if self.path.startswith('/search'):
-            search_text = urllib.parse.unquote(self.path.split('?')[1])
+
+            search_text = urllib.parse.unquote(search_params[0])
             SimpleHTTPRequestHandler.__image = parse_images('images.html', search_text).strip()
             self.send_response(200)
             self.end_headers()
